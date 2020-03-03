@@ -1,10 +1,31 @@
 package cn.yesterday17.uuidmapper;
 
 import net.minecraft.launchwrapper.IClassTransformer;
-import net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper;
 import org.objectweb.asm.*;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 public class UUIDTransformer implements IClassTransformer {
+    static String mapMethodName(String owner, String name, String desc) {
+        Class<?> clazz;
+        try {
+            try {
+                clazz = Class.forName("net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper");
+            } catch (ClassNotFoundException e) {
+                clazz = Class.forName("cpw.mods.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper");
+            }
+
+            Field field = clazz.getDeclaredField("INSTANCE");
+            Object instance = field.get(null);
+            Method method = clazz.getDeclaredMethod("mapMethodName", String.class, String.class, String.class);
+            return (String) method.invoke(instance, owner, name, desc);
+        } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException ex) {
+            throw new RuntimeException("Failed to map notch name for UUIDMapper.", ex);
+        }
+    }
+
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
         if (transformedName.equals("net.minecraft.server.network.NetHandlerLoginServer")) {
@@ -19,7 +40,7 @@ public class UUIDTransformer implements IClassTransformer {
                 @Override
                 public MethodVisitor visitMethod(int access, String methodName, String desc, String signature, String[] exceptions) {
                     MethodVisitor mv = cv.visitMethod(access, methodName, desc, signature, exceptions);
-                    String s = FMLDeobfuscatingRemapper.INSTANCE.mapMethodName(name, methodName, desc);
+                    String s = mapMethodName(name, methodName, desc);
                     if (s.equals("func_152506_a") || s.equals("getOfflineProfile")) {
                         mv = new MethodVisitor(api, mv) {
                             @Override
