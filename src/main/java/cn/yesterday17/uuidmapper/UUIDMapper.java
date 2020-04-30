@@ -31,7 +31,13 @@ public class UUIDMapper {
             if (status == 200) {
                 Scanner scanner = new Scanner(connection.getInputStream()).useDelimiter("\\A");
                 String body = scanner.hasNext() ? scanner.next() : "";
-                uuidMap.put(name, UnTrimUUID(body.substring(7, 39)));
+                if (body.charAt(2) == 'n') {
+                    // name
+                    uuidMap.put(name, UnTrimUUID(body.substring(17 + name.length(), 17 + name.length() + 32)));
+                } else {
+                    // id
+                    uuidMap.put(name, UnTrimUUID(body.substring(7, 39)));
+                }
             } else if (status == 204) {
                 nonExistList.add(name);
             }
@@ -40,8 +46,8 @@ public class UUIDMapper {
         }
     }
 
-    private static Map<String, String> uuidMap = new HashMap<>();
-    private static List<String> nonExistList = new LinkedList<>();
+    private static final Map<String, String> uuidMap = new HashMap<>();
+    private static final List<String> nonExistList = new LinkedList<>();
 
     public static GameProfile getOfflineProfile(GameProfile original) {
         String name = original.getName();
